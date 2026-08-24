@@ -1,0 +1,7 @@
+yarn run v1.22.22
+$ next start --port 3000
+▲ Next.js 16.3.2
+- Local:         http://localhost:3000
+- Network:       http://172.17.16.1:3000
+✓ Ready in 779ms
+✓ Running next.config.ts took 144ms

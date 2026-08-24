@@ -1,0 +1,12 @@
+const fs=require('fs');
+const en = fs.readFileSync('tmp-pdf-en.pdf');
+const fr = fs.readFileSync('tmp-pdf-fr.pdf');
+const ar = fs.readFileSync('tmp-pdf-ar.pdf');
+console.log('EN contains GPSR', en.toString('utf8').includes('GPSR'));
+console.log('FR contains GPSR', fr.toString('utf8').includes('GPSR'));
+console.log('FR contains Conformit', fr.toString('utf8').includes('Conformit'));
+console.log('FR contains Rapport', fr.toString('utf8').includes('Rapport'));
+console.log('FR snippet', fr.toString('utf8').slice(0,1000).replace(/\n/g,' '));
+console.log('AR contains Amiri', ar.toString('utf8').includes('Amiri'));
+console.log('AR size', ar.length);
+console.log('AR contains Arabic bytes', ar.toString('utf8').includes('الامتثال') ? 'yes' : 'no');

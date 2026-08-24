@@ -1,0 +1,431 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String             @id @default(cuid())
+  firstName       String
+  lastName        String
+  name            String?
+  email           String             @unique
+  emailVerified   DateTime?
+  image           String?
+  password        String?
+  role            Role               @default(USER)
+  company         String?
+  country         String?
+  phone           String?
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  accounts        Account[]
+  auditLogs       AuditLog[]
+  reports         ComplianceReport[]
+  gpsrChecks      GpsrCheck[]
+  notifications   Notification[]
+  products        Product[]
+  sessions        Session[]
+  stagedDocuments StagedDocument[]
+  subscription    Subscription?
+  usageRecords    UsageRecord[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([token])
+}
+
+model Product {
+  id                String             @id @default(cuid())
+  userId            String
+  name              String
+  description       String?
+  brand             String?
+  category          String?
+  productType       String?
+  sku               String?
+  modelNumber       String?
+  gtin              String?
+  countryOfOrigin   String?
+  barcode           String?
+  serialNumber      String?
+  batchNumber       String?
+  productIdentifier String?
+  status            ProductStatus      @default(DRAFT)
+  score             Int                @default(0)
+  isArchived        Boolean            @default(false)
+  imageUrl          String?
+  additionalImages  String[]           @default([])
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  deletedAt         DateTime?
+  auditLogs         AuditLog[]
+  reports           ComplianceReport[]
+  gpsrChecks        GpsrCheck[]
+  manufacturer      Manufacturer?
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents         ProductDocument[]
+  responsiblePerson ResponsiblePerson?
+  safetyInfo        SafetyInfo?
+
+  @@unique([userId, sku])
+  @@index([userId])
+  @@index([status])
+  @@index([sku])
+  @@index([createdAt])
+}
+
+model Manufacturer {
+  id          String   @id @default(cuid())
+  productId   String   @unique
+  name        String
+  tradeName   String?
+  companyName String?
+  street      String?
+  city        String?
+  postalCode  String?
+  country     String?
+  email       String?
+  phone       String?
+  website     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ResponsiblePerson {
+  id         String   @id @default(cuid())
+  productId  String   @unique
+  isRequired Boolean  @default(false)
+  company    String?
+  street     String?
+  city       String?
+  postalCode String?
+  country    String?
+  email      String?
+  phone      String?
+  website    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model SafetyInfo {
+  id                   String   @id @default(cuid())
+  productId            String   @unique
+  warnings             String?
+  instructions         String?
+  ageRestrictions      String?
+  usageRestrictions    String?
+  assemblyInstructions String?
+  storageInstructions  String?
+  disposalInstructions String?
+  otherInfo            String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  product              Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductDocument {
+  id           String       @id @default(cuid())
+  productId    String
+  fileName     String
+  originalName String
+  mimeType     String
+  size         Int
+  storageKey   String
+  url          String?
+  type         DocumentType @default(OTHER)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([type])
+}
+
+model StagedDocument {
+  id           String       @id @default(cuid())
+  userId       String
+  fileName     String
+  originalName String
+  mimeType     String
+  size         Int
+  storageKey   String
+  documentType String?
+  createdAt    DateTime     @default(now())
+  expiresAt    DateTime
+  type         DocumentType @default(OTHER)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model GpsrCheck {
+  id        String            @id @default(cuid())
+  productId String
+  userId    String
+  score     Int
+  status    CheckStatus
+  summary   String?
+  createdAt DateTime          @default(now())
+  report    ComplianceReport?
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issues    GpsrIssue[]
+
+  @@index([productId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model GpsrIssue {
+  id             String        @id @default(cuid())
+  checkId        String
+  code           String
+  title          String
+  description    String
+  severity       IssueSeverity
+  category       IssueCategory
+  field          String?
+  recommendation String?
+  isResolved     Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  check          GpsrCheck     @relation(fields: [checkId], references: [id], onDelete: Cascade)
+
+  @@index([checkId])
+  @@index([severity])
+  @@index([category])
+}
+
+model GpsrRule {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  title       String
+  description String
+  category    IssueCategory
+  required    Boolean       @default(true)
+  severity    IssueSeverity
+  enabled     Boolean       @default(true)
+  version     String        @default("1.0")
+  weight      Int           @default(10)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([category])
+  @@index([enabled])
+}
+
+model ComplianceReport {
+  id        String    @id @default(cuid())
+  productId String
+  checkId   String    @unique
+  userId    String
+  reportId  String    @unique @default(cuid())
+  title     String
+  content   Json?
+  pdfUrl    String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  check     GpsrCheck @relation(fields: [checkId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(SYSTEM)
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  productId String?
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  product   Product? @relation(fields: [productId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([productId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  plan                 SubscriptionPlan   @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  stripePriceId        String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UsageRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  count     Int      @default(1)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model SystemSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ProductStatus {
+  DRAFT
+  INCOMPLETE
+  NEEDS_REVIEW
+  READY
+  ARCHIVED
+}
+
+enum CheckStatus {
+  PASSED
+  FAILED
+  NEEDS_REVIEW
+}
+
+enum IssueSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IssueCategory {
+  MANUFACTURER
+  RESPONSIBLE_PERSON
+  IDENTIFICATION
+  SAFETY
+  DOCUMENTS
+  GENERAL
+}
+
+enum DocumentType {
+  MANUAL
+  SAFETY_INSTRUCTIONS
+  WARNINGS
+  TECHNICAL
+  CERTIFICATE
+  OTHER
+}
+
+enum NotificationType {
+  CHECK_COMPLETED
+  REPORT_READY
+  ISSUE_FOUND
+  SYSTEM
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  BUSINESS
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+  INCOMPLETE
+}
