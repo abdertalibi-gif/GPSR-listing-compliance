@@ -1,159 +1,165 @@
 # GPSR Listing Compliance — SaaS Platform
 
-Production-ready SaaS for **EU GPSR Listing Information Checks**. Helps e-commerce sellers identify missing product safety & traceability information before publishing in the EU market.
+Automated **EU General Product Safety Regulation (GPSR)** Listing Information Checks for e-commerce sellers. Identify missing product traceability, manufacturer, EU Responsible Person, identifier, and safety information before publishing products in the European market.
 
-> **Disclaimer:** This platform provides automated **Listing Information Checks** and compliance support. It does **not** constitute legal advice, product certification, safety certification, or a guarantee of compliance with EU law. We use terms: *GPSR Listing Check, Compliance Information Check, Listing Information Review, Needs Review* — never *“100% legally compliant.”*
+> **Disclaimer:** This platform provides automated **Listing Information Checks** and compliance support. It does **not** constitute legal advice, product certification, safety certification, or a guarantee of compliance with EU law. A `READY` status means *"Required listing information appears complete based on the supplied information."*
 
-## Features
+---
 
-- **Product Listing Check** — transparent score 0–100, status (DRAFT/INCOMPLETE/NEEDS_REVIEW/READY/ARCHIVED), ranked issues
-- **Manufacturer & EU Responsible Person** — conditional RP collection, never auto-invented
-- **Product Identification** — SKU/Model/GTIN/Barcode/Serial/Batch (at least one required, GTIN validated)
-- **Safety Information** — warnings, instructions, restrictions (rich text)
-- **Document Management** — PDF/DOC/DOCX/JPG/PNG/WebP, validated type/size/MIME, private storage
-- **Reports** — professional PDF with logo, product, score, issues, recommendations, disclaimer, Report ID
-- **History & Compare** — previous vs current check, fixed/new/remaining issues
-- **Bulk checking, issue tracking, audit logs, notifications, admin panel, configurable GPSR rules**
+## Screenshots
 
-## Tech Stack (strict)
+### Landing Page & Instant Compliance Preview
+![GPSR Listing Compliance Landing Page](docs/screenshots/landing.jpg)
 
-- **Next.js 16 (App Router, Turbopack)** + TypeScript (strict) + React 19
-- **Tailwind CSS 4** + **shadcn/ui** + **Lucide Icons**
-- **PostgreSQL** + **Prisma ORM 6.14** (UUID/cuid, indexes, FKs, soft delete)
-- **Auth.js (NextAuth 5 beta)** — Email/password + Google + Facebook OAuth, JWT sessions
-- **Zod** + **React Hook Form** + **bcryptjs**
-- **jsPDF** for reports, **date-fns**
+### Compliance Dashboard & Product Monitoring
+![Compliance Dashboard](docs/screenshots/dashboard.jpg)
 
-## Architecture
+### Audit-Ready GPSR Compliance Report & PDF Export
+![GPSR Compliance Report](docs/screenshots/report.jpg)
 
+---
+
+## Key Features
+
+- **Product Listing Check Engine** — Decoupled, rule-weighted validator (`src/services/gpsr/gpsr-validator.ts`) returning a transparent `0–100` score, status (`DRAFT`, `INCOMPLETE`, `NEEDS_REVIEW`, `READY`, `ARCHIVED`), passed checks, and ranked issues with fix recommendations.
+- **6-Step Product Wizard** — Guided creation flow covering Basic Info, Manufacturer, Conditional EU Responsible Person, Safety Information, Private Document Uploads (staging + attachment), and Final Review.
+- **Manufacturer & EU Responsible Person** — Collects complete traceability details; enforces EU Responsible Person details only when the manufacturer is established outside the EU.
+- **Product Identification** — Validates SKU, Model Number, GTIN/EAN/UPC format, Barcode, Serial, and Batch identifiers.
+- **Safety & Traceability** — Structured capture for safety warnings, usage instructions, age/usage restrictions, assembly, storage, and disposal guidance.
+- **Document Center** — Validates file extensions (`PDF`, `DOC`, `DOCX`, `JPG`, `PNG`, `WebP`), MIME types, and 10 MB size limits with private storage keys (local or S3/R2-compatible).
+- **Multilingual UI & PDF Reports (`EN` / `FR` / `AR`)** — Full RTL support for Arabic and multilingual PDF compliance reports generated via `jsPDF` with embedded Arabic font (`Amiri-Regular.ttf`), Report ID, score breakdown, and legal disclaimer.
+- **Check History & Notifications** — Persists historical checks, audit logs, and user notifications.
+- **Admin Panel** — User management, system-wide metrics, and configurable `SystemSettings` / `GpsrRule` tables.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Framework** | Next.js 16 (App Router, Standalone Output) + React 19 + TypeScript |
+| **Styling & UI** | Tailwind CSS 4 + Lucide React icons |
+| **Database & ORM** | PostgreSQL + Prisma ORM 6.14 (with offline mock fallback in `src/lib/prisma.ts`) |
+| **Authentication** | Auth.js (NextAuth v5 beta) — Credentials (bcrypt), Google & Facebook OAuth, JWT sessions |
+| **Validation** | Zod + React Hook Form |
+| **PDF & i18n** | jsPDF + custom i18n context (`en`, `fr`, `ar`) |
+| **Testing** | Vitest |
+
+---
+
+## Project Structure
+
+```text
+├── prisma/
+│   └── schema.prisma              # Database models (User, Product, Manufacturer, GpsrCheck, etc.)
+├── docs/
+│   └── screenshots/               # Application UI previews
+├── public/
+│   └── fonts/Amiri-Regular.ttf    # Arabic font for multilingual PDF export
+├── src/
+│   ├── app/
+│   │   ├── api/                   # REST Route Handlers (auth, products, checks, documents, reports PDF)
+│   │   ├── dashboard/             # Authenticated workspace (products, checks, reports, documents, settings)
+│   │   ├── admin/                 # Admin console (users, settings)
+│   │   └── (public pages)/        # Landing, features, pricing, FAQ, about, contact, legal pages
+│   ├── components/                # Layout, UI primitives, reports, i18n switcher
+│   ├── lib/
+│   │   ├── auth.ts                # Auth.js configuration
+│   │   ├── prisma.ts              # Prisma client + safe mock fallback when DB is offline
+│   │   ├── storage.ts             # File validation & local/S3 storage helpers
+│   │   ├── pdf/                   # PDF report generator & translations
+│   │   └── validations/           # Zod schemas
+│   └── services/gpsr/
+│       ├── gpsr-validator.ts      # Core scoring & compliance evaluation engine
+│       └── rules.ts               # Weighted GPSR rule definitions
+└── tests/                         # Vitest unit tests (GPSR validator & PDF generation)
 ```
-Frontend → Next.js Route Handlers / Server Actions / Server Components
-        → Services (src/services/gpsr/gpsr-validator.ts + rules.ts)
-        → Prisma → PostgreSQL
-Auth: Auth.js  | Validation: Zod | UI: Tailwind + shadcn/ui
-```
 
-- Brand colors: **Navy #0f1f3c**, **Gold #c9a227**, **Slate** neutrals, minimal enterprise design
-- Security headers, RBAC, ownership checks server-side, Zod everywhere, file validation, rate limiting ready
+---
 
-## Database Models (Prisma)
+## Getting Started
 
-User, Account, Session, VerificationToken, PasswordResetToken, Product, Manufacturer, ResponsiblePerson, SafetyInfo, ProductDocument, GpsrCheck, GpsrIssue, GpsrRule (configurable), ComplianceReport, Notification, AuditLog, Subscription, UsageRecord, SystemSettings — see `prisma/schema.prisma:1`
+### Prerequisites
 
-GPSR engine is decoupled: `src/services/gpsr/gpsr-validator.ts:1` + `src/services/gpsr/rules.ts:1` — not inside React components.
+- **Node.js 22+** and **npm**
+- **PostgreSQL** (optional for local UI preview — the app falls back to an in-memory/mock Prisma proxy when `DATABASE_URL` is unset)
 
-## Quick Start
+### 1. Install Dependencies
 
 ```bash
-# 1. Requirements: Node 22+, PostgreSQL
-yarn install   # or npm install --legacy-peer-deps
+npm install
+```
 
-# 2. Env
+### 2. Configure Environment Variables
+
+```bash
 cp .env.example .env
-# edit DATABASE_URL, AUTH_SECRET, GOOGLE_*, FACEBOOK_*, STORAGE_*
-
-# 3. DB — generate client & push/migrate
-yarn db:generate
-yarn db:push        # or yarn db:migrate
-# seed demo (optional):
-# node --loader ts-node prisma/seed.ts
-
-# 4. Dev / Build / Test
-yarn dev            # http://localhost:3000
-yarn typecheck
-yarn lint
-yarn test           # Vitest — 6 GPSR validator tests
-yarn build
-yarn start
 ```
 
-### Environment (.env.example)
+Update `.env` with your credentials:
 
-```
+```env
 DATABASE_URL=postgresql://user:password@localhost:5432/gpsr_compliance
-AUTH_SECRET=generate-with-openssl-rand-base64-32
+AUTH_SECRET=replace-with-32-char-random-secret
 AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Optional OAuth Providers
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 FACEBOOK_CLIENT_ID=
 FACEBOOK_CLIENT_SECRET=
-STORAGE_ENDPOINT=   # S3 / R2 / Supabase Storage
+
+# Optional Object Storage (S3 / R2 / Supabase)
+STORAGE_ENDPOINT=
 STORAGE_ACCESS_KEY=
 STORAGE_SECRET_KEY=
 STORAGE_BUCKET=gpsr-documents
-NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-## Auth
-
-- Pages: `/login`, `/register`, `/forgot-password`, `/verify-email`
-- Password rules: min 8, uppercase, lowercase, number, special char
-- `autocomplete="email"`, `current-password` / `new-password`
-- Email verification & reset tokens are **hashed**, expiring, never plain
-- `src/lib/auth.ts:1` — `PrismaAdapter`, JWT, secure cookies
-
-## Key Routes
-
-| Area | Path |
-|------|------|
-| Public | `/`, `/features`, `/pricing`, `/about`, `/contact`, `/faq`, `/privacy`, `/terms`, `/disclaimer` |
-| Auth | `/login`, `/register`, `/forgot-password` |
-| Dashboard | `/dashboard`, `/dashboard/products`, `/dashboard/products/new`, `/dashboard/products/[id]`, `/dashboard/products/[id]/check` |
-| Ops | `/dashboard/checks`, `/dashboard/reports`, `/dashboard/reports/[id]`, `/dashboard/documents`, `/dashboard/notifications`, `/dashboard/settings/profile` |
-| Admin | `/admin`, `/admin/users`, `/admin/settings` (ADMIN only) |
-| API | `POST /api/products`, `GET /api/products`, `GET /api/products/[id]`, `POST /api/products/[id]/check`, `GET /api/checks`, `GET /api/reports`, `POST /api/documents`, etc. — all verify auth + ownership + role server-side (`src/app/api/products/route.ts:1`) |
-
-## GPSR Engine
-
-```ts
-import { validateGpsrProduct } from "@/services/gpsr/gpsr-validator";
-const result = validateGpsrProduct(product);
-// → { status, score, missingFields, warnings, recommendations, checks, issues }
-```
-
-- Weighted rules (`src/services/gpsr/rules.ts:1`) with `code, severity, category, required, enabled, version`
-- Score 0–49 Incomplete, 50–79 Needs Review, 80–99 Almost Ready, 100 Complete — always explains missing points
-- `READY` requires **no CRITICAL** issues
-
-## Reports & PDFs
-
-- Report model stores `content` JSON + `reportId` (e.g. `RPT-...`)
-- PDF generation via `jspdf` includes logo, product, score, issues, disclaimer — never claims legal certification
-- `src/app/dashboard/reports/[id]/page.tsx:1`
-
-## File Storage
-
-- Metadata in `ProductDocument` (storageKey, mime, size)
-- Validation: allowed types + 10MB limit + MIME check (`src/app/api/documents/route.ts:1`)
-- Ready for S3 / Cloudflare R2 / Supabase Storage (env-driven)
-
-## Security
-
-- Auth + RBAC + Zod + rate limiting + secure cookies + input/file validation + XSS/SQL/CSRF protections + security headers (`next.config.ts:1`) + error sanitization
-
-## Testing
+### 3. Initialize Database (when using PostgreSQL)
 
 ```bash
-yarn test
-# → tests/gpsr-validator.test.ts — 6 cases: valid product, missing manufacturer/address/RP/identifier/safety, score transparency
+npm run db:generate
+npm run db:push
 ```
 
-## Production Build
+### 4. Run Development Server
 
 ```bash
-yarn build   # ✓ Compiled in 23.7s — 33 routes, static + dynamic
+npm run dev
 ```
 
-## Deployment
+Open [http://localhost:3000](http://localhost:3000).
 
-- Set `DATABASE_URL` and run migrations, set `AUTH_SECRET` (≥32 chars), OAuth IDs, storage creds
-- `next.config.ts` ships security headers, `robots.ts`/`sitemap.ts` for SEO, `not-found.tsx`/`error.tsx` for UX
+---
 
-## Legal
+## Scripts & Testing
 
-See `/disclaimer` and footer. Platform is **Listing Information Review** only.
+```bash
+npm run dev         # Start Next.js dev server on 0.0.0.0:3000
+npm run build       # Generate Prisma client and build production bundle
+npm run start       # Start production server on 0.0.0.0:3000
+npm run lint        # Run ESLint
+npm run typecheck   # Run TypeScript compiler checks (tsc --noEmit)
+npm test            # Run Vitest unit test suite (12 tests)
+```
 
-## License
+---
 
-Private — SaaS commercial.
+## Routes Overview
 
+| Section | Routes |
+|---|---|
+| **Public** | `/`, `/features`, `/pricing`, `/about`, `/contact`, `/faq`, `/privacy`, `/terms`, `/disclaimer` |
+| **Auth** | `/login`, `/register`, `/forgot-password` |
+| **Dashboard** | `/dashboard`, `/dashboard/products`, `/dashboard/products/new`, `/dashboard/products/[id]`, `/dashboard/products/[id]/check` |
+| **Compliance & Ops** | `/dashboard/checks`, `/dashboard/reports`, `/dashboard/reports/[id]`, `/dashboard/documents`, `/dashboard/notifications`, `/dashboard/settings/profile` |
+| **Admin** | `/admin`, `/admin/users`, `/admin/settings` |
+| **API** | `/api/products`, `/api/products/[id]`, `/api/products/[id]/check`, `/api/checks`, `/api/reports`, `/api/reports/[id]/pdf`, `/api/documents`, `/api/documents/staged`, `/api/notifications` |
+
+---
+
+## Legal Notice
+
+This software is intended solely as an automated **Listing Information Check** tool. Always consult qualified legal counsel for EU regulatory compliance decisions.

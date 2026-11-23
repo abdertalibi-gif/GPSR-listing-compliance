@@ -5,12 +5,22 @@ import Facebook from "next-auth/providers/facebook";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 import { loginSchema } from "@/lib/validations/auth";
+
+const globalForAuth = globalThis as unknown as { __authFallbackSecret?: string };
+function getAuthSecret(): string {
+  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
+  if (!globalForAuth.__authFallbackSecret) {
+    globalForAuth.__authFallbackSecret = randomBytes(32).toString("hex");
+  }
+  return globalForAuth.__authFallbackSecret;
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
-  secret: process.env.AUTH_SECRET,
+  secret: getAuthSecret(),
   trustHost: true,
   providers: [
     Credentials({
